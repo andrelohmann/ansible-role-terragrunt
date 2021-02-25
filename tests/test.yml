@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  become: true
+  become_method: sudo
+
+  roles:
+  - andrelohmann.terraform
+  - ansible-role-terragrunt
+...

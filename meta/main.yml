@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  role_name: terragrunt
+  author: andrelohmann
+  description: ansible galaxy role to install terragrunt
+  company: smartformer UG
+
+  license: MIT
+
+  min_ansible_version: 2.7
+
+  platforms:
+    - name: Ubuntu
+      versions:
+      - xenial
+      - bionic
+      - focal
+
+  galaxy_tags:
+  - terraform
+  - terragrunt
+
+dependencies:
+- andrelohmann.terraform
+...
