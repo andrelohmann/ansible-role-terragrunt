@@ -1,49 +1,28 @@
 ---
-- name: Install packages
-  apt:
-    name: "{{ packages }}"
-    state: latest
-    dpkg_options: 'force-confnew,force-confdef'
-    autoclean: yes
-    autoremove: yes
-    update_cache: yes
-    cache_valid_time: 3600
-  vars:
-    packages:
-    - curl
 
-- name: extract latest version number
-  block:
-
-  - name: fetch latest terragrunt version
-    shell: curl -s -o /dev/null -I -w "%{redirect_url}\n" https://github.com/gruntwork-io/terragrunt/releases/latest | grep -oP "[0-9]+(\.[0-9]+)+$"
-    args:
-      executable: /bin/bash
-    register: latest_terragrunt_version
-
-  - name: set terragrunt_version
-    set_fact:
-      terragrunt_version: "{{ latest_terragrunt_version.stdout }}"
-
+- name: fetch latest terragrunt version
+  uri:
+    url: "{{ terragrunt_url }}/latest"
+    follow_redirects: no
+  register: terragrunt_latest_version
   when: terragrunt_version == "latest"
+  failed_when: terragrunt_latest_version.status >= 400 # redirections cause failure otherwise
 
 - name: Check terragrunt version
-  shell: "terragrunt --version 2>&1 | grep {{ terragrunt_version }}"
+  command: "terragrunt --version"
   failed_when: false
   changed_when: false
-  register: terragrunt_versions_match
+  register: terragrunt_old_version
 
-- include: download.yml
-  when: terragrunt_versions_match.rc != 0
+- name: consolidate values
+  set_fact:
+    terragrunt_old_version: '{{ terragrunt_old_version.rc | ternary("", (terragrunt_old_version.stdout | default("x")).split()[-1]) }}'
+    terragrunt_version: '{{ (terragrunt_version != "latest") | ternary(terragrunt_version, (terragrunt_latest_version.location | default("") | urlsplit("path")).split("/")[0][1:]) }}'
 
-- name: Copy terragrunt to /usr/local/bin/terragrunt
-  copy:
-    src: /tmp/terragrunt
-    dest: "/usr/local/bin"
-    owner: root
-    group: root
-    mode: 0755
-    remote_src: yes
-  when: terragrunt_versions_match.rc != 0
+- name: Download and install terragrunt for {{ ansible_system }} on {{ ansible_architecture }}
+  uri:
+    url: "{{ terragrunt_url }}/download/v{{ terragrunt_version }}/terragrunt_{{ ansible_system|lower }}_{{ terragrunt_supported_architectures[ansible_architecture] }}"
+    dest: "{{ terragrunt_dir }}"
+  when: (ansible_architecture in terragrunt_supported_architectures) and (terragrunt_old_version != terragrunt_version)
 
 ...
