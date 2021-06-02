@@ -1,0 +1,10 @@
+---
+
+terragrunt_supported_architectures:
+  x86_64: "amd64"
+  i386: "386"
+  arm64: "arm64" #FIXME key guessed
+terragrunt_dir: "/usr/local/bin"
+terragrunt_url: https://github.com/gruntwork-io/terragrunt/releases
+
+...
